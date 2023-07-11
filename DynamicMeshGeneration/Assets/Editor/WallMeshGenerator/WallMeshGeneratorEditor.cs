@@ -25,13 +25,15 @@ public class WallMeshGeneratorEditor : Editor
             if (script.MeshFilter != null && script.MeshFilter.sharedMesh != null)
             {
                 // Resetting all values if Mesh gets deleted
-                script.transform.rotation = Quaternion.identity;
-                script.Depth = 0.5f;
-                script.Height = 8f;
-                script.WidthRight = 3;
-                script.WidthLeft = -3;
+                var transform = script.transform;
+                transform.position = Vector3.zero;
+                transform.rotation = Quaternion.identity;
+                script.Depth = 1f;
+                script.Height = 2f;
+                script.WidthRight = 1f;
+                script.WidthLeft = -1f;
                 script.rowCount = 5;
-                script.columnCount = 4;
+                script.columnCount = 5;
                 script.TextureOffset = Vector3.zero;
                 script.TextureScale = 0.25f;
                 // Deletes Mesh
@@ -46,7 +48,7 @@ public class WallMeshGeneratorEditor : Editor
     {
         WallMeshGenerator script = (WallMeshGenerator)target;
         // Nothing gets created or drawn if there is no Mesh, or the Edit Mesh Button isn't pressed
-        if (script.MeshFilter.sharedMesh == null || !buttonPressed)
+        if (!script.MeshFilter.sharedMesh || !buttonPressed)
             return;
 
         EditorGUI.BeginChangeCheck();
@@ -55,7 +57,8 @@ public class WallMeshGeneratorEditor : Editor
         float yScale = script.Height / 2f;
         float zScaleRight = script.WidthRight / 2f;
         float zScaleLeft = script.WidthLeft / 2f;
-        Vector3 position = script.transform.position;
+        var transform = script.transform;
+        Vector3 position = transform.position;
         Vector3 frontPos = new Vector3(xScale, 0, 0);
         Vector3 backPos = new Vector3(-xScale, 0, 0);
         Vector3 topPos = new Vector3(0, yScale, 0);
@@ -64,7 +67,8 @@ public class WallMeshGeneratorEditor : Editor
         Vector3 leftPos = new Vector3(0, 0, zScaleLeft) + topPos / 2f;
 
         // Create Free Movement Handles that look like squares on the center of each face of the mesh
-        Handles.matrix = Matrix4x4.TRS(position, script.transform.rotation, Vector3.one);
+        var rotation = transform.rotation;
+        Handles.matrix = Matrix4x4.TRS(position, rotation, Vector3.one);
         float topHandle = Handles
             .FreeMoveHandle(topPos, Quaternion.identity, handleSize, Vector3.zero, Handles.DotHandleCap).y;
         float rightHandle = Handles
@@ -78,10 +82,10 @@ public class WallMeshGeneratorEditor : Editor
         var boundsSize = new Vector3(depth, height, width);
         // TODO: Description
         Vector3 localCenter = new(0, yScale, zScaleRight + zScaleLeft);
-        Vector3 rotatedWoldCenter = position + script.transform.rotation * localCenter * 0.5f;
+        Vector3 rotatedWoldCenter = position + rotation * localCenter * 0.5f;
 
         // Draw a Wire Cube with the dimensions of the Mesh's Face-To-OppositeFace
-        Handles.matrix = Matrix4x4.TRS(rotatedWoldCenter, script.transform.rotation, Vector3.one);
+        Handles.matrix = Matrix4x4.TRS(rotatedWoldCenter, rotation, Vector3.one);
         Handles.DrawWireCube(Vector3.zero, boundsSize);
 
         if (EditorGUI.EndChangeCheck())

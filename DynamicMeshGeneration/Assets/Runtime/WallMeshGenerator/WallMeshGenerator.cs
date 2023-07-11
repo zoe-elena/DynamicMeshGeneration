@@ -7,22 +7,28 @@ public class WallMeshGenerator : MonoBehaviour
     [Header("References")] public MeshFilter MeshFilter;
 
     [SerializeField] private Transform MeshTransform;
+    
+    
+    [Space, Header("Mesh")]
+    
+    [Tooltip("Up Scale")] public float Height = 2f;
 
-    [Space, Header("Mesh")] [Tooltip("= Front and Back Scale")]
-    public float Depth = 0.5f;
+    [Tooltip("= Front and Back Scale")] public float Depth = 1f;
 
-    [Tooltip("Up Scale")] public float Height = 8f;
+    [Tooltip("Right Scale")] public float WidthRight = 1;
 
-    [Tooltip("Right Scale")] public float WidthRight = 3;
+    [Tooltip("Left Scale")] public float WidthLeft = -1;
 
-    [Tooltip("Left Scale")] public float WidthLeft = -3;
-
+    
     [Space, Header("Front and Back Face Subdivision")]
+    
     public int rowCount = 5;
 
-    public int columnCount = 4;
+    public int columnCount = 5;
 
+    
     [Space, Header("Texture")] [SerializeField]
+    
     public Vector2 TextureOffset = Vector3.zero;
 
     [SerializeField] public float TextureScale = 0.25f;
