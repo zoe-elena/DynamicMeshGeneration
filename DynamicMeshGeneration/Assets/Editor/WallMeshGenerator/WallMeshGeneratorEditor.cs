@@ -32,8 +32,8 @@ public class WallMeshGeneratorEditor : Editor
                 script.Height = script.WallSegmentHeight * 2;
                 script.WidthRight = 1f;
                 script.WidthLeft = -1f;
-                script.rowCount = 5;
-                script.columnCount = 5;
+                script.rowCount = 1;
+                script.columnCount = 1;
                 script.TextureOffset = Vector3.zero;
                 script.TextureScale = 1f;
                 // Deletes Mesh

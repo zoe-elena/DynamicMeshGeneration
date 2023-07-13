@@ -18,11 +18,6 @@ public class WallMeshGenerator : MonoBehaviour
 
     [Tooltip("Left Scale")] public float WidthLeft = -1;
 
-    [Space] public bool subDivideFrontAndBack = true;
-
-    [Tooltip("Front and Back Face Subdivision")]
-    public int subdivisionMultiplier = 1;
-
 
     [Space, Header("Texture"), SerializeField]
     public Vector2 TextureOffset = Vector3.zero;
@@ -30,9 +25,9 @@ public class WallMeshGenerator : MonoBehaviour
     [SerializeField] public float TextureScale = 0.25f;
 
 
-    [HideInInspector] public int rowCount = 5;
+    [HideInInspector] public int rowCount = 1;
 
-    [HideInInspector] public int columnCount = 5;
+    [HideInInspector] public int columnCount = 1;
 
     // One segment is this long on texture scale 1
     [HideInInspector] public float WallSegmentHeight = 0.84375f;
@@ -48,7 +43,6 @@ public class WallMeshGenerator : MonoBehaviour
         if (Height < 0.1f) Height = 0.1f;
         if (WidthRight < 0.1f) WidthRight = 0.1f;
         if (WidthLeft > -0.1f) WidthLeft = -0.1f;
-        if (subdivisionMultiplier < 1) subdivisionMultiplier = 1;
         wallDirty = true;
     }
 
@@ -72,18 +66,6 @@ public class WallMeshGenerator : MonoBehaviour
         UpdateMesh(vertices, triangles, uv, normals);
     }
 
-    public void CheckAndSetSubdivision()
-    {
-        if (Height / 2 >= 1)
-        {
-            rowCount = (int)(Height / 2 * subdivisionMultiplier);
-        }
-
-        float cappedWidthRight = WidthRight <= 1 ? 1 : WidthRight;
-        float cappedWidthLeft = WidthLeft >= -1 ? 1 : Mathf.Abs(WidthLeft);
-        columnCount = (int)((cappedWidthRight + cappedWidthLeft) / 2f * subdivisionMultiplier);
-    }
-
     private void Setup()
     {
         mesh = new Mesh { name = "Wall" };
@@ -91,15 +73,6 @@ public class WallMeshGenerator : MonoBehaviour
         MeshTransform.localPosition = Vector3.zero;
         MeshTransform.rotation = Quaternion.identity;
         MeshTransform.localScale = Vector3.one;
-        if (subDivideFrontAndBack)
-        {
-            CheckAndSetSubdivision();
-        }
-        else
-        {
-            rowCount = 1;
-            columnCount = 1;
-        }
     }
 
     private Vector3[] CreateVertices()

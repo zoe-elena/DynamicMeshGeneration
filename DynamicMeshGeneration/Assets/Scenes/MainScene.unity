@@ -123,7 +123,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!43 &673857416
+--- !u!43 &554038561
 Mesh:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -475,7 +475,15 @@ PrefabInstance:
     - target: {fileID: 6462230473415345830, guid: 0050e54525211624ca10bc2e59ba6da3, type: 3}
       propertyPath: m_Mesh
       value: 
-      objectReference: {fileID: 673857416}
+      objectReference: {fileID: 554038561}
+    - target: {fileID: 6462230474462195205, guid: 0050e54525211624ca10bc2e59ba6da3, type: 3}
+      propertyPath: rowCount
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6462230474462195205, guid: 0050e54525211624ca10bc2e59ba6da3, type: 3}
+      propertyPath: columnCount
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6462230474462195206, guid: 0050e54525211624ca10bc2e59ba6da3, type: 3}
       propertyPath: m_RootOrder
       value: 1
