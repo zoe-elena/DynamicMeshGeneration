@@ -29,13 +29,13 @@ public class WallMeshGeneratorEditor : Editor
                 transform.position = Vector3.zero;
                 transform.rotation = Quaternion.identity;
                 script.Depth = 1f;
-                script.Height = 2f;
+                script.Height = script.WallSegmentHeight * 2;
                 script.WidthRight = 1f;
                 script.WidthLeft = -1f;
                 script.rowCount = 5;
                 script.columnCount = 5;
                 script.TextureOffset = Vector3.zero;
-                script.TextureScale = 0.25f;
+                script.TextureScale = 1f;
                 // Deletes Mesh
                 script.MeshFilter.mesh = null;
             }
@@ -98,6 +98,7 @@ public class WallMeshGeneratorEditor : Editor
                 script.Height = topHandle * 2f;
                 script.WidthRight = rightHandle * 2f;
                 script.WidthLeft = leftHandle * 2f;
+
                 script.GenerateMesh();
             }
         }
