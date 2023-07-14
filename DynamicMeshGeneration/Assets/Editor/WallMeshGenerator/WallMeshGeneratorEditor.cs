@@ -32,8 +32,8 @@ public class WallMeshGeneratorEditor : Editor
                 script.Height = script.WallSegmentHeight * 2;
                 script.WidthRight = 1f;
                 script.WidthLeft = -1f;
-                script.rowCount = 1;
-                script.columnCount = 1;
+                script.RowCount = 1;
+                script.ColumnCount = 1;
                 script.TextureOffset = Vector3.zero;
                 script.TextureScale = 1f;
                 // Deletes Mesh
@@ -95,7 +95,7 @@ public class WallMeshGeneratorEditor : Editor
             // If the Handles weren't scaled below or higher than 0, the adjusted mesh gets created
             if (topHandle > 0 && rightHandle > 0 && leftHandle < 0)
             {
-                script.Height = topHandle * 2f;
+                script.Height = topHandle > script.WallSegmentHeight ? script.WallSegmentHeight * 2 : topHandle * 2f;
                 script.WidthRight = rightHandle * 2f;
                 script.WidthLeft = leftHandle * 2f;
 

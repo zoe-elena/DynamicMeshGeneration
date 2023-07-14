@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [ExecuteAlways]
 public class WallMeshGenerator : MonoBehaviour
@@ -25,22 +26,28 @@ public class WallMeshGenerator : MonoBehaviour
     [SerializeField] public float TextureScale = 0.25f;
 
 
-    [HideInInspector] public int rowCount = 1;
+    [HideInInspector] public int RowCount = 1;
 
-    [HideInInspector] public int columnCount = 1;
+    [HideInInspector] public int ColumnCount = 1;
 
-    // One segment is this long on texture scale 1
-    [HideInInspector] public float WallSegmentHeight = 0.84375f;
-    
+    // One segment is this long on texture scale 1 (0.84375f)
+    [HideInInspector] public float WallSegmentHeight = 1f;
+
+
     private Mesh mesh;
 
     private bool wallDirty;
+
+    private int textureColumnCount = 4;
+
+    private int textureRowCount = 3;
 
 
     private void OnValidate()
     {
         if (Depth < 0.1f) Depth = 0.1f;
         if (Height < 0.1f) Height = 0.1f;
+        else if (Height > 2f) Height = 2f;
         if (WidthRight < 0.1f) WidthRight = 0.1f;
         if (WidthLeft > -0.1f) WidthLeft = -0.1f;
         wallDirty = true;
@@ -120,36 +127,98 @@ public class WallMeshGenerator : MonoBehaviour
     {
         // Add Vertices to subdivide the front and back face of the mesh for vertex painting
         List<Vector3> vertices = new List<Vector3>(_cubeVertices);
-        float width = (vertices[1] - vertices[0]).magnitude;
-        float height = (vertices[5] - vertices[0]).magnitude;
-
-        float quadWidth = width / columnCount;
-        float quadHeight = height / rowCount;
-
-        for (int i = 0; i < rowCount; i++)
-        {
-            for (int j = 0; j < columnCount; j++)
-            {
-                vertices.Add(new Vector3(Depth, quadHeight * i, WidthRight - quadWidth * j));
-                vertices.Add(new Vector3(Depth, quadHeight * i, WidthRight - quadWidth * (j + 1)));
-                vertices.Add(new Vector3(Depth, quadHeight * (i + 1), WidthRight - quadWidth * j));
-                vertices.Add(new Vector3(Depth, quadHeight * (i + 1), WidthRight - quadWidth * (j + 1)));
-            }
-        }
-
-        for (int i = 0; i < rowCount; i++)
-        {
-            for (int j = 0; j < columnCount; j++)
-            {
-                vertices.Add(new Vector3(-Depth, quadHeight * i, WidthLeft + quadWidth * j));
-                vertices.Add(new Vector3(-Depth, quadHeight * i, WidthLeft + quadWidth * (j + 1)));
-                vertices.Add(new Vector3(-Depth, quadHeight * (i + 1), WidthLeft + quadWidth * j));
-                vertices.Add(new Vector3(-Depth, quadHeight * (i + 1), WidthLeft + quadWidth * (j + 1)));
-            }
-        }
+        
+        SubdivideCubeFront(vertices);
+        SubdivideCubeBack(vertices);
 
         Vector3[] verticesArray = vertices.ToArray();
         return verticesArray;
+    }
+
+    private void SubdivideCubeFront(List<Vector3> _vertices)
+    {
+        float additiveRightExtension = (int)WidthRight % 2 == 0 ? WidthRight - (int)WidthRight : WidthRight - (int)WidthRight + 1;
+        float additiveLeftExtension = (int)WidthLeft % 2 == 0 ? Mathf.Abs(WidthLeft) - Mathf.Abs((int)WidthLeft) : Mathf.Abs(WidthLeft - (int)WidthLeft) + 1;
+        int rightSegments = WidthRight / 2 >= 1 ? (int)WidthRight / 2 : 0;
+        int leftSegments = Mathf.Abs(WidthLeft) / 2 >= 1 ? (int)Mathf.Abs(WidthLeft) / 2 : 0;
+        int rightAdditiveSegment = additiveRightExtension > 0 ? 1 : 0;
+        int leftAdditiveSegment = additiveLeftExtension > 0 ? 1 : 0;
+        ColumnCount = rightAdditiveSegment + rightSegments + leftSegments + leftAdditiveSegment;
+        float height = (_vertices[5] - _vertices[0]).magnitude;
+        float quadHeight = height / RowCount;
+        float prevUVLength;
+
+        if (additiveRightExtension > 0)
+        {
+            _vertices.Add(new Vector3(Depth, 0, WidthRight));
+            _vertices.Add(new Vector3(Depth, 0, WidthRight - additiveRightExtension));
+            _vertices.Add(new Vector3(Depth, quadHeight, WidthRight));
+            _vertices.Add(new Vector3(Depth, quadHeight, WidthRight - additiveRightExtension));
+        }
+
+        prevUVLength = WidthRight - additiveRightExtension;
+
+        int allExtensions = rightSegments + leftSegments;
+        for (int i = 0; i < allExtensions; i++)
+        {
+            _vertices.Add(new Vector3(Depth, 0, prevUVLength));
+            _vertices.Add(new Vector3(Depth, 0, prevUVLength - 2));
+            _vertices.Add(new Vector3(Depth, quadHeight, prevUVLength));
+            _vertices.Add(new Vector3(Depth, quadHeight, prevUVLength - 2));
+            prevUVLength -= 2;
+        }
+
+        if (additiveLeftExtension > 0)
+        {
+            _vertices.Add(new Vector3(Depth, 0, prevUVLength));
+            _vertices.Add(new Vector3(Depth, 0, prevUVLength - additiveLeftExtension));
+            _vertices.Add(new Vector3(Depth, quadHeight, prevUVLength));
+            _vertices.Add(new Vector3(Depth, quadHeight, prevUVLength - additiveLeftExtension));
+            prevUVLength -= additiveLeftExtension;
+        }
+    }
+    
+     private void SubdivideCubeBack(List<Vector3> _vertices)
+    {
+        float additiveRightExtension = (int)WidthLeft % 2 == 0 ? Mathf.Abs(WidthLeft) - Mathf.Abs((int)WidthLeft) : Mathf.Abs(WidthLeft - (int)WidthLeft) + 1;
+        float additiveLeftExtension = (int)WidthRight % 2 == 0 ? WidthRight - (int)WidthRight : WidthRight - (int)WidthRight + 1;
+        int rightSegments = Mathf.Abs(WidthLeft) / 2 >= 1 ? (int)Mathf.Abs(WidthLeft) / 2 : 0;
+        int leftSegments = WidthRight / 2 >= 1 ? (int)WidthRight / 2 : 0;
+        int rightAdditiveSegment = additiveRightExtension > 0 ? 1 : 0;
+        int leftAdditiveSegment = additiveLeftExtension > 0 ? 1 : 0;
+        ColumnCount = rightAdditiveSegment + rightSegments + leftSegments + leftAdditiveSegment;
+        float height = (_vertices[5] - _vertices[0]).magnitude;
+        float quadHeight = height / RowCount;
+        float prevUVLength;
+
+        if (additiveRightExtension > 0)
+        {
+            _vertices.Add(new Vector3(-Depth, 0, WidthLeft));
+            _vertices.Add(new Vector3(-Depth, 0, WidthLeft + additiveRightExtension));
+            _vertices.Add(new Vector3(-Depth, quadHeight, WidthLeft));
+            _vertices.Add(new Vector3(-Depth, quadHeight, WidthLeft + additiveRightExtension));
+        }
+
+        prevUVLength = WidthLeft + additiveRightExtension;
+
+        int allExtensions = rightSegments + leftSegments;
+        for (int i = 0; i < allExtensions; i++)
+        {
+            _vertices.Add(new Vector3(-Depth, 0, prevUVLength));
+            _vertices.Add(new Vector3(-Depth, 0, prevUVLength + 2));
+            _vertices.Add(new Vector3(-Depth, quadHeight, prevUVLength));
+            _vertices.Add(new Vector3(-Depth, quadHeight, prevUVLength + 2));
+            prevUVLength += 2;
+        }
+
+        if (additiveLeftExtension > 0)
+        {
+            _vertices.Add(new Vector3(-Depth, 0, prevUVLength));
+            _vertices.Add(new Vector3(-Depth, 0, prevUVLength + additiveLeftExtension));
+            _vertices.Add(new Vector3(-Depth, quadHeight, prevUVLength));
+            _vertices.Add(new Vector3(-Depth, quadHeight, prevUVLength + additiveLeftExtension));
+            prevUVLength += additiveLeftExtension;
+        }
     }
 
     private void RotateVertices(Vector3[] vertices)
@@ -183,7 +252,7 @@ public class WallMeshGenerator : MonoBehaviour
         const int missingQuadWallSides = 3;
         // the front and back face of the cube contain more triangles because of the subdivision for vertex paint
         const int subdividedWallSides = 2;
-        for (int i = 0; i < rowCount * columnCount * subdividedWallSides + missingQuadWallSides; i++)
+        for (int i = 0; i < RowCount * ColumnCount * subdividedWallSides + missingQuadWallSides; i++)
         {
             for (int j = 0; j < firstQuad.Length; j++)
             {
@@ -196,26 +265,26 @@ public class WallMeshGenerator : MonoBehaviour
 
     private Vector2[] CreateUV(Vector3[] vertices)
     {
-        float widthLeft = TextureOffset.x + (WidthLeft / 2 + 0.5f) * TextureScale;
-        float widthRight = TextureOffset.x + (WidthRight / 2 + 0.5f) * TextureScale;
+        // float widthLeft = TextureOffset.x + (WidthLeft / 2 + 0.5f) * TextureScale;
+        // float widthRight = TextureOffset.x + (WidthRight / 2 + 0.5f) * TextureScale;
         float height = TextureOffset.y + Height / 2 * TextureScale;
         float depthX = TextureOffset.x + Depth * TextureScale;
         float depthXLeft = TextureOffset.x + (1 - Depth) * TextureScale;
-        float depthY = TextureOffset.y + Depth * TextureScale;
+        // float depthY = TextureOffset.y + Depth * TextureScale;
 
 
         Vector2[] outerCubeUV =
         {
             // top
-            new(widthRight, TextureOffset.y),
-            new(widthLeft, TextureOffset.y),
-            new(widthRight, depthY),
-            new(widthLeft, depthY),
+            new(TextureScale, TextureOffset.y),
+            new(TextureOffset.x, TextureOffset.y),
+            new(TextureScale, TextureScale),
+            new(TextureOffset.x, TextureScale),
             // bottom
-            new(widthLeft, TextureOffset.y),
-            new(widthRight, TextureOffset.y),
-            new(widthLeft, depthY),
-            new(widthRight, depthY),
+            new(TextureOffset.x, TextureOffset.y),
+            new(TextureScale, TextureOffset.y),
+            new(TextureOffset.x, TextureScale),
+            new(TextureScale, TextureScale),
             // right
             new(TextureOffset.x, TextureOffset.y),
             new(TextureOffset.x, height),
@@ -229,43 +298,131 @@ public class WallMeshGenerator : MonoBehaviour
         };
 
         List<Vector2> uv = new List<Vector2>(outerCubeUV);
-        widthLeft = TextureOffset.x + (WidthLeft / 2 - 0.5f) * TextureScale;
-        float quadWidth = (vertices[1] - vertices[0]).magnitude / columnCount;
-        float quadHeight = (vertices[5] - vertices[0]).magnitude / rowCount;
+        // widthLeft = TextureOffset.x + (WidthLeft / 2 - 0.5f) * TextureScale;
+        // float quadWidth = (vertices[1] - vertices[0]).magnitude / ColumnCount;
+        // float quadHeight = (vertices[5] - vertices[0]).magnitude / RowCount;
 
         // front face
-        for (int j = 0; j < rowCount; j++)
+        for (int j = 0; j < RowCount; j++)
         {
-            for (int k = 0; k < columnCount; k++)
+            for (int k = 0; k < ColumnCount; k++)
             {
-                uv.Add(new Vector2(widthRight - quadWidth * k * TextureScale,
-                    TextureOffset.y + quadHeight * j * TextureScale));
-                uv.Add(new Vector2(widthRight - quadWidth * (k + 1) * TextureScale,
-                    TextureOffset.y + quadHeight * j * TextureScale));
-                uv.Add(new Vector2(widthRight - quadWidth * k * TextureScale,
-                    TextureOffset.y + quadHeight * (j + 1) * TextureScale));
-                uv.Add(new Vector2(widthRight - quadWidth * (k + 1) * TextureScale,
-                    TextureOffset.y + quadHeight * (j + 1) * TextureScale));
+                uv.Add(new Vector2(0, 0));
+                uv.Add(new Vector2(TextureScale, 0));
+                uv.Add(new Vector2(0, TextureScale));
+                uv.Add(new Vector2(TextureScale, TextureScale));
             }
         }
 
         // back face
-        for (int j = 0; j < rowCount; j++)
+        for (int j = 0; j < RowCount; j++)
         {
-            for (int k = 0; k < columnCount; k++)
+            for (int k = 0; k < ColumnCount; k++)
             {
-                uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * k * TextureScale,
-                    TextureOffset.y + quadHeight * j * TextureScale));
-                uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * (k + 1) * TextureScale,
-                    TextureOffset.y + quadHeight * j * TextureScale));
-                uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * k * TextureScale,
-                    TextureOffset.y + quadHeight * (j + 1) * TextureScale));
-                uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * (k + 1) * TextureScale,
-                    TextureOffset.y + quadHeight * (j + 1) * TextureScale));
+                uv.Add(new Vector2(0, 0));
+                uv.Add(new Vector2(TextureScale, 0));
+                uv.Add(new Vector2(0, TextureScale));
+                uv.Add(new Vector2(TextureScale, TextureScale));
             }
         }
 
-        return uv.ToArray();
+        // // front face
+        // for (int j = 0; j < RowCount; j++)
+        // {
+        //     for (int k = 0; k < ColumnCount; k++)
+        //     {
+        //         uv.Add(new Vector2(widthRight - quadWidth * k * TextureScale,
+        //             TextureOffset.y + quadHeight * j * TextureScale));
+        //         uv.Add(new Vector2(widthRight - quadWidth * (k + 1) * TextureScale,
+        //             TextureOffset.y + quadHeight * j * TextureScale));
+        //         uv.Add(new Vector2(widthRight - quadWidth * k * TextureScale,
+        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
+        //         uv.Add(new Vector2(widthRight - quadWidth * (k + 1) * TextureScale,
+        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
+        //     }
+        // }
+        //
+        // // back face
+        // for (int j = 0; j < RowCount; j++)
+        // {
+        //     for (int k = 0; k < ColumnCount; k++)
+        //     {
+        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * k * TextureScale,
+        //             TextureOffset.y + quadHeight * j * TextureScale));
+        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * (k + 1) * TextureScale,
+        //             TextureOffset.y + quadHeight * j * TextureScale));
+        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * k * TextureScale,
+        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
+        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * (k + 1) * TextureScale,
+        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
+        //     }
+        // }
+
+        Vector2[] uvArray = uv.ToArray();
+        RandomizeTextureVariants(uvArray);
+
+        return uvArray;
+    }
+
+    private void RandomizeTextureVariants(Vector2[] _uv)
+    {
+        for (int i = 0; i < _uv.Length; i++)
+        {
+            // Zoom in on bottom left variant
+            _uv[i].x /= textureColumnCount;
+            _uv[i].y /= textureRowCount;
+        }
+
+        const int verticesPerQuad = 4;
+        const int verticesTopAndBot = verticesPerQuad * 2;
+
+        for (int i = 0; i < verticesTopAndBot; i++)
+        {
+            _uv[i].x += (1f / (float)textureColumnCount) * (textureColumnCount - 1);
+            _uv[i].y += (1f / (float)textureRowCount) * (textureRowCount);
+        }
+
+        for (int i = 8; i < _uv.Length; i += verticesPerQuad)
+        {
+            int randomX;
+            int randomY;
+            PreventFirstAndLastVariant(out randomX, out randomY);
+
+            for (int j = 0; j < verticesPerQuad; j++)
+            {
+                _uv[i + j].x += (1f / (float)textureColumnCount) * randomX;
+                _uv[i + j].y += (1f / (float)textureRowCount) * randomY;
+            }
+        }
+    }
+
+    private void PreventFirstAndLastVariant(out int _randomX, out int _randomY)
+    {
+        // Randomize
+        _randomX = Random.Range(0, textureColumnCount);
+        _randomY = Random.Range(0, textureRowCount);
+
+        // Prevent the first and last texture variant (pillar and blank)
+        bool checkFirst = CheckFirstVariant(_randomX, _randomY);
+        bool checkLast = CheckLastVariant(_randomX, _randomY);
+
+
+        while (checkFirst || checkLast)
+        {
+            _randomX = Random.Range(0, textureColumnCount);
+            checkFirst = CheckFirstVariant(_randomX, _randomY);
+            checkLast = CheckLastVariant(_randomX, _randomY);
+        }
+    }
+
+    private bool CheckFirstVariant(int _randomX, int _randomY)
+    {
+        return _randomX == 0 && _randomY == textureRowCount - 1;
+    }
+
+    private bool CheckLastVariant(int _randomX, int _randomY)
+    {
+        return _randomX == textureColumnCount - 1 && _randomY == 0;
     }
 
     private Vector3[] CreateNormals(Vector3[] vertices)
@@ -280,9 +437,9 @@ public class WallMeshGenerator : MonoBehaviour
 
         var normals = new List<Vector3>(outerCubeNormals);
         var normalsBack = new List<Vector3>();
-        for (int i = 0; i < rowCount; i++)
+        for (int i = 0; i < RowCount; i++)
         {
-            for (int j = 0; j < columnCount; j++)
+            for (int j = 0; j < ColumnCount; j++)
             {
                 normals.Add(frontNormal);
                 normalsBack.Add(backNormal);

@@ -61,7 +61,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 8166343438cc9af4496a59b05bb4d4cf, type: 2}
+  - {fileID: 2100000, guid: 949b02e7b9aa77b4b9dbe5ef40db4823, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -130,14 +130,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MeshFilter: {fileID: 6462230473415345830}
   MeshTransform: {fileID: 6462230473415345829}
-  Height: 1.6875
+  Height: 2
   Depth: 1
   WidthRight: 1
   WidthLeft: -1
-  subDivideFrontAndBack: 0
-  subdivisionMultiplier: 1
   TextureOffset: {x: 0, y: 0}
   TextureScale: 1
-  rowCount: 5
-  columnCount: 5
-  WallSegmentHeight: 0.84375
+  RowCount: 1
+  ColumnCount: 1
+  TextureRowCount: 4
+  TextureColumnCount: 3
+  WallSegmentHeight: 1
