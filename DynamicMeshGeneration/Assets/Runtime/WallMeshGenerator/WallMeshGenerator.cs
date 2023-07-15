@@ -20,7 +20,7 @@ public class WallMeshGenerator : MonoBehaviour
     [Tooltip("Left Scale")] public float WidthLeft = -1;
 
 
-    [Space, Header("Texture"), SerializeField]
+    [Space, Header("Texture"), HideInInspector]
     public Vector2 TextureOffset = Vector3.zero;
 
     [SerializeField] public float TextureScale = 0.25f;
@@ -42,6 +42,11 @@ public class WallMeshGenerator : MonoBehaviour
 
     private int textureRowCount = 3;
 
+    private List<Vector2> textureVariantsRight;
+    
+    private List<Vector2> textureVariantsLeft;
+
+    const int verticesPerQuad = 4;
 
     private void OnValidate()
     {
@@ -127,7 +132,7 @@ public class WallMeshGenerator : MonoBehaviour
     {
         // Add Vertices to subdivide the front and back face of the mesh for vertex painting
         List<Vector3> vertices = new List<Vector3>(_cubeVertices);
-        
+
         SubdivideCubeFront(vertices);
         SubdivideCubeBack(vertices);
 
@@ -137,8 +142,11 @@ public class WallMeshGenerator : MonoBehaviour
 
     private void SubdivideCubeFront(List<Vector3> _vertices)
     {
-        float additiveRightExtension = (int)WidthRight % 2 == 0 ? WidthRight - (int)WidthRight : WidthRight - (int)WidthRight + 1;
-        float additiveLeftExtension = (int)WidthLeft % 2 == 0 ? Mathf.Abs(WidthLeft) - Mathf.Abs((int)WidthLeft) : Mathf.Abs(WidthLeft - (int)WidthLeft) + 1;
+        float additiveRightExtension =
+            (int)WidthRight % 2 == 0 ? WidthRight - (int)WidthRight : WidthRight - (int)WidthRight + 1;
+        float additiveLeftExtension = (int)WidthLeft % 2 == 0
+            ? Mathf.Abs(WidthLeft) - Mathf.Abs((int)WidthLeft)
+            : Mathf.Abs(WidthLeft - (int)WidthLeft) + 1;
         int rightSegments = WidthRight / 2 >= 1 ? (int)WidthRight / 2 : 0;
         int leftSegments = Mathf.Abs(WidthLeft) / 2 >= 1 ? (int)Mathf.Abs(WidthLeft) / 2 : 0;
         int rightAdditiveSegment = additiveRightExtension > 0 ? 1 : 0;
@@ -177,16 +185,57 @@ public class WallMeshGenerator : MonoBehaviour
             prevUVLength -= additiveLeftExtension;
         }
     }
-    
-     private void SubdivideCubeBack(List<Vector3> _vertices)
+
+    private void SubdivideCubeBack(List<Vector3> _vertices)
     {
-        float additiveRightExtension = (int)WidthLeft % 2 == 0 ? Mathf.Abs(WidthLeft) - Mathf.Abs((int)WidthLeft) : Mathf.Abs(WidthLeft - (int)WidthLeft) + 1;
-        float additiveLeftExtension = (int)WidthRight % 2 == 0 ? WidthRight - (int)WidthRight : WidthRight - (int)WidthRight + 1;
+        float additiveRightExtension = (int)WidthLeft % 2 == 0
+            ? Mathf.Abs(WidthLeft) - Mathf.Abs((int)WidthLeft)
+            : Mathf.Abs(WidthLeft - (int)WidthLeft) + 1;
+        float additiveLeftExtension =
+            (int)WidthRight % 2 == 0 ? WidthRight - (int)WidthRight : WidthRight - (int)WidthRight + 1;
         int rightSegments = Mathf.Abs(WidthLeft) / 2 >= 1 ? (int)Mathf.Abs(WidthLeft) / 2 : 0;
         int leftSegments = WidthRight / 2 >= 1 ? (int)WidthRight / 2 : 0;
         int rightAdditiveSegment = additiveRightExtension > 0 ? 1 : 0;
         int leftAdditiveSegment = additiveLeftExtension > 0 ? 1 : 0;
+        int prevColumnCount = ColumnCount;
         ColumnCount = rightAdditiveSegment + rightSegments + leftSegments + leftAdditiveSegment;
+        
+        if (prevColumnCount != ColumnCount)
+        {
+            if (prevColumnCount < ColumnCount)
+            {
+                if (prevColumnCount == 0)
+                {
+                    textureVariantsRight = new();
+                    textureVariantsLeft = new();
+                    textureVariantsRight.Add(FindRandomTextureVariant());
+                    textureVariantsLeft.Add(FindRandomTextureVariant());
+                }
+                else
+                {
+                    if (rightAdditiveSegment > textureVariantsRight.Count)
+                    {
+                        textureVariantsRight.Add(FindRandomTextureVariant());
+                    }
+                    else if (leftAdditiveSegment > textureVariantsLeft.Count)
+                    {
+                        textureVariantsLeft.Add(FindRandomTextureVariant());
+                    }
+                }
+            }
+            else
+            {
+                if (rightAdditiveSegment < textureVariantsRight.Count)
+                {
+                    textureVariantsRight.RemoveAt(textureVariantsRight.Count - 1);
+                }
+                else if (leftAdditiveSegment < textureVariantsLeft.Count)
+                {
+                    textureVariantsLeft.RemoveAt(textureVariantsLeft.Count - 1);
+                }
+            }
+        }
+
         float height = (_vertices[5] - _vertices[0]).magnitude;
         float quadHeight = height / RowCount;
         float prevUVLength;
@@ -265,13 +314,9 @@ public class WallMeshGenerator : MonoBehaviour
 
     private Vector2[] CreateUV(Vector3[] vertices)
     {
-        // float widthLeft = TextureOffset.x + (WidthLeft / 2 + 0.5f) * TextureScale;
-        // float widthRight = TextureOffset.x + (WidthRight / 2 + 0.5f) * TextureScale;
         float height = TextureOffset.y + Height / 2 * TextureScale;
         float depthX = TextureOffset.x + Depth * TextureScale;
         float depthXLeft = TextureOffset.x + (1 - Depth) * TextureScale;
-        // float depthY = TextureOffset.y + Depth * TextureScale;
-
 
         Vector2[] outerCubeUV =
         {
@@ -298,121 +343,128 @@ public class WallMeshGenerator : MonoBehaviour
         };
 
         List<Vector2> uv = new List<Vector2>(outerCubeUV);
-        // widthLeft = TextureOffset.x + (WidthLeft / 2 - 0.5f) * TextureScale;
-        // float quadWidth = (vertices[1] - vertices[0]).magnitude / ColumnCount;
-        // float quadHeight = (vertices[5] - vertices[0]).magnitude / RowCount;
 
         // front face
-        for (int j = 0; j < RowCount; j++)
+        for (int k = 0; k < ColumnCount; k++)
         {
-            for (int k = 0; k < ColumnCount; k++)
+            float distToNextVert;
+
+            if (k < ColumnCount / 2)
             {
+                distToNextVert = (vertices[outerCubeUV.Length + k * 4 + 1] - vertices[outerCubeUV.Length + k * 4])
+                    .magnitude;
+                uv.Add(new Vector2(distToNextVert, 0));
                 uv.Add(new Vector2(0, 0));
-                uv.Add(new Vector2(TextureScale, 0));
+                uv.Add(new Vector2(distToNextVert, TextureScale));
                 uv.Add(new Vector2(0, TextureScale));
-                uv.Add(new Vector2(TextureScale, TextureScale));
+            }
+            else
+            {
+                distToNextVert = 1 - (vertices[outerCubeUV.Length + k * 4 + 1] - vertices[outerCubeUV.Length + k * 4])
+                    .magnitude;
+                uv.Add(new Vector2(1, 0));
+                uv.Add(new Vector2(distToNextVert, 0));
+                uv.Add(new Vector2(1, TextureScale));
+                uv.Add(new Vector2(distToNextVert, TextureScale));
             }
         }
 
         // back face
-        for (int j = 0; j < RowCount; j++)
+        for (int k = 0; k < ColumnCount; k++)
         {
-            for (int k = 0; k < ColumnCount; k++)
+            float distToNextVert;
+
+            if (k < ColumnCount / 2)
             {
+                distToNextVert = (vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4 + 1] -
+                                  vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4]).magnitude;
+                uv.Add(new Vector2(distToNextVert, 0));
                 uv.Add(new Vector2(0, 0));
-                uv.Add(new Vector2(TextureScale, 0));
+                uv.Add(new Vector2(distToNextVert, TextureScale));
                 uv.Add(new Vector2(0, TextureScale));
-                uv.Add(new Vector2(TextureScale, TextureScale));
+            }
+            else
+            {
+                distToNextVert = 1 - (vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4 + 1] -
+                                      vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4]).magnitude;
+                uv.Add(new Vector2(1, 0));
+                uv.Add(new Vector2(distToNextVert, 0));
+                uv.Add(new Vector2(1, TextureScale));
+                uv.Add(new Vector2(distToNextVert, TextureScale));
             }
         }
 
-        // // front face
-        // for (int j = 0; j < RowCount; j++)
-        // {
-        //     for (int k = 0; k < ColumnCount; k++)
-        //     {
-        //         uv.Add(new Vector2(widthRight - quadWidth * k * TextureScale,
-        //             TextureOffset.y + quadHeight * j * TextureScale));
-        //         uv.Add(new Vector2(widthRight - quadWidth * (k + 1) * TextureScale,
-        //             TextureOffset.y + quadHeight * j * TextureScale));
-        //         uv.Add(new Vector2(widthRight - quadWidth * k * TextureScale,
-        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
-        //         uv.Add(new Vector2(widthRight - quadWidth * (k + 1) * TextureScale,
-        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
-        //     }
-        // }
-        //
-        // // back face
-        // for (int j = 0; j < RowCount; j++)
-        // {
-        //     for (int k = 0; k < ColumnCount; k++)
-        //     {
-        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * k * TextureScale,
-        //             TextureOffset.y + quadHeight * j * TextureScale));
-        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * (k + 1) * TextureScale,
-        //             TextureOffset.y + quadHeight * j * TextureScale));
-        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * k * TextureScale,
-        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
-        //         uv.Add(new Vector2(Mathf.Abs(widthLeft) - quadWidth * (k + 1) * TextureScale,
-        //             TextureOffset.y + quadHeight * (j + 1) * TextureScale));
-        //     }
-        // }
-
         Vector2[] uvArray = uv.ToArray();
-        RandomizeTextureVariants(uvArray);
+        ZoomUVIn(uvArray);
+        //SetTextureVariants(uvArray);
 
         return uvArray;
     }
 
-    private void RandomizeTextureVariants(Vector2[] _uv)
+    private void ZoomUVIn(Vector2[] _uv)
     {
         for (int i = 0; i < _uv.Length; i++)
         {
-            // Zoom in on bottom left variant
             _uv[i].x /= textureColumnCount;
             _uv[i].y /= textureRowCount;
         }
+    }
 
-        const int verticesPerQuad = 4;
+    private void SetTextureVariants(Vector2[] _uv)
+    {
         const int verticesTopAndBot = verticesPerQuad * 2;
 
+        // Set Last Texture Variant = Blank / Black
         for (int i = 0; i < verticesTopAndBot; i++)
         {
             _uv[i].x += (1f / (float)textureColumnCount) * (textureColumnCount - 1);
             _uv[i].y += (1f / (float)textureRowCount) * (textureRowCount);
         }
 
-        for (int i = 8; i < _uv.Length; i += verticesPerQuad)
+        for (int i = verticesTopAndBot; i < _uv.Length - verticesTopAndBot; i += verticesPerQuad)
         {
-            int randomX;
-            int randomY;
-            PreventFirstAndLastVariant(out randomX, out randomY);
+            int variantCount = _uv.Length - verticesTopAndBot * 2;
+            Vector2 randomVariants;
+
+            if (i - verticesTopAndBot < variantCount / 2)
+            {
+                randomVariants = textureVariantsRight[i - verticesTopAndBot];
+            }
+            else
+            {
+                randomVariants = textureVariantsLeft[i - verticesTopAndBot - variantCount / 2];
+            }
 
             for (int j = 0; j < verticesPerQuad; j++)
             {
-                _uv[i + j].x += (1f / (float)textureColumnCount) * randomX;
-                _uv[i + j].y += (1f / (float)textureRowCount) * randomY;
+                _uv[i + j].x += (1f / (float)textureColumnCount) * randomVariants.x;
+                _uv[i + j].y += (1f / (float)textureRowCount) * randomVariants.y;
             }
         }
     }
 
-    private void PreventFirstAndLastVariant(out int _randomX, out int _randomY)
+    private Vector2 FindRandomTextureVariant()
     {
+        int randomX;
+        int randomY;
+
         // Randomize
-        _randomX = Random.Range(0, textureColumnCount);
-        _randomY = Random.Range(0, textureRowCount);
+        randomX = Random.Range(0, textureColumnCount);
+        randomY = Random.Range(0, textureRowCount);
 
         // Prevent the first and last texture variant (pillar and blank)
-        bool checkFirst = CheckFirstVariant(_randomX, _randomY);
-        bool checkLast = CheckLastVariant(_randomX, _randomY);
+        bool checkFirst = CheckFirstVariant(randomX, randomY);
+        bool checkLast = CheckLastVariant(randomX, randomY);
 
 
         while (checkFirst || checkLast)
         {
-            _randomX = Random.Range(0, textureColumnCount);
-            checkFirst = CheckFirstVariant(_randomX, _randomY);
-            checkLast = CheckLastVariant(_randomX, _randomY);
+            randomX = Random.Range(0, textureColumnCount);
+            checkFirst = CheckFirstVariant(randomX, randomY);
+            checkLast = CheckLastVariant(randomX, randomY);
         }
+
+        return new Vector2(randomX, randomY);
     }
 
     private bool CheckFirstVariant(int _randomX, int _randomY)
@@ -449,10 +501,9 @@ public class WallMeshGenerator : MonoBehaviour
         normals.AddRange(normalsBack);
 
         List<Vector3> normalsMultiplied = new List<Vector3>();
-        int quadVerticesCount = 4;
         foreach (Vector3 normal in normals)
         {
-            for (int j = 0; j < quadVerticesCount; j++)
+            for (int j = 0; j < verticesPerQuad; j++)
             {
                 normalsMultiplied.Add(normal);
             }
