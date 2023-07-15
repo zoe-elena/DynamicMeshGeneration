@@ -12,8 +12,9 @@ public class WallMeshGenerator : MonoBehaviour
 
     [Space, Header("Mesh"), Tooltip("Up Scale")]
     public float Height = 2f;
-    
-    [Tooltip("= Front and Back Scale"), HideInInspector] public float Depth = 1f;
+
+    [Tooltip("= Front and Back Scale"), HideInInspector]
+    public float Depth = 1f;
 
     [Tooltip("Right Scale")] public float WidthRight = 1;
 
@@ -23,7 +24,7 @@ public class WallMeshGenerator : MonoBehaviour
     [Space, Header("Texture"), HideInInspector]
     public Vector2 TextureOffset = Vector3.zero;
 
-    
+
     [HideInInspector] public float TextureScale = 0.25f;
 
     [HideInInspector] public int RowCount = 1;
@@ -42,9 +43,9 @@ public class WallMeshGenerator : MonoBehaviour
 
     private int textureRowCount = 3;
 
-    private List<Vector2> textureVariantsRight;
+    private List<int> textureVariantsRight;
 
-    private List<Vector2> textureVariantsLeft;
+    private List<int> textureVariantsLeft;
 
     const int verticesPerQuad = 4;
 
@@ -167,25 +168,31 @@ public class WallMeshGenerator : MonoBehaviour
                 }
                 else
                 {
-                    if (rightSegments + rightAdditiveSegment > textureVariantsRight.Count)
+                    for (int i = 0; i < ColumnCount - prevColumnCount; i++)
                     {
-                        textureVariantsRight.Insert(0, FindRandomTextureVariant());
-                    }
-                    else if (leftSegments + leftAdditiveSegment > textureVariantsLeft.Count)
-                    {
-                        textureVariantsLeft.Add(FindRandomTextureVariant());
+                        if (rightSegments + rightAdditiveSegment > textureVariantsRight.Count)
+                        {
+                            textureVariantsRight.Insert(0, FindRandomTextureVariant());
+                        }
+                        else if (leftSegments + leftAdditiveSegment > textureVariantsLeft.Count)
+                        {
+                            textureVariantsLeft.Add(FindRandomTextureVariant());
+                        }
                     }
                 }
             }
             else
             {
-                if (rightSegments + rightAdditiveSegment < textureVariantsRight.Count)
+                for (int i = 0; i < prevColumnCount - ColumnCount; i++)
                 {
-                    textureVariantsRight.RemoveAt(0);
-                }
-                else if (leftSegments + leftAdditiveSegment < textureVariantsLeft.Count)
-                {
-                    textureVariantsLeft.RemoveAt(textureVariantsLeft.Count - 1);
+                    if (rightSegments + rightAdditiveSegment < textureVariantsRight.Count)
+                    {
+                        textureVariantsRight.RemoveAt(0);
+                    }
+                    else if (leftSegments + leftAdditiveSegment < textureVariantsLeft.Count)
+                    {
+                        textureVariantsLeft.RemoveAt(textureVariantsLeft.Count - 1);
+                    }
                 }
             }
         }
@@ -419,64 +426,42 @@ public class WallMeshGenerator : MonoBehaviour
         for (int i = 0; i < verticesTopAndBot; i++)
         {
             _uv[i].x += (1f / (float)textureColumnCount) * (textureColumnCount - 1);
-            _uv[i].y += (1f / (float)textureRowCount) * (textureRowCount);
+            _uv[i].y += (1f / (float)textureRowCount) * (textureRowCount - 1);
         }
 
-        for (int i = verticesTopAndBot; i < verticesTopAndBot + textureVariantsRight.Count * 4 + textureVariantsLeft.Count * 4; i += verticesPerQuad)
+        //TODO: backside
+        for (int i = verticesTopAndBot * 2;
+             i < _uv.Length - textureVariantsRight.Count * verticesPerQuad -
+             textureVariantsLeft.Count * verticesPerQuad;
+             i += verticesPerQuad)
         {
-            int variantCount = (_uv.Length - verticesTopAndBot * 2) / 2;
-            Vector2 randomVariants;
+            int randomVariantIndex;
 
-            int currentSegmentIndex = (i - verticesTopAndBot) / verticesPerQuad;
+            int currentSegmentIndex = (i - verticesTopAndBot * 2) / verticesPerQuad;
             if (currentSegmentIndex < textureVariantsRight.Count)
             {
-                randomVariants = textureVariantsRight[currentSegmentIndex];
+                randomVariantIndex = textureVariantsRight[currentSegmentIndex];
             }
             else
             {
-                randomVariants = textureVariantsLeft[currentSegmentIndex - textureVariantsRight.Count];
+                randomVariantIndex = textureVariantsLeft[currentSegmentIndex - textureVariantsRight.Count];
             }
 
             for (int j = 0; j < verticesPerQuad; j++)
             {
-                _uv[i + j].x += (1f / (float)textureColumnCount) * randomVariants.x;
-                _uv[i + j].y += (1f / (float)textureRowCount) * randomVariants.y;
+                int row = randomVariantIndex % 4;
+                int column = randomVariantIndex / 4;
+                _uv[i + j].x += (1f / (float)textureColumnCount) * row;
+                _uv[i + j].y += (1f / (float)textureRowCount) * column;
             }
         }
     }
 
-    private Vector2 FindRandomTextureVariant()
+    private int FindRandomTextureVariant()
     {
-        int randomX;
-        int randomY;
+        int randomIndex = Random.Range(0, textureColumnCount * textureRowCount - 2);
 
-        // Randomize
-        randomX = Random.Range(0, textureColumnCount);
-        randomY = Random.Range(0, textureRowCount);
-
-        // Prevent the first and last texture variant (pillar and blank)
-        bool checkFirst = CheckFirstVariant(randomX, randomY);
-        bool checkLast = CheckLastVariant(randomX, randomY);
-
-
-        while (checkFirst || checkLast)
-        {
-            randomX = Random.Range(0, textureColumnCount);
-            checkFirst = CheckFirstVariant(randomX, randomY);
-            checkLast = CheckLastVariant(randomX, randomY);
-        }
-
-        return new Vector2(randomX, randomY);
-    }
-
-    private bool CheckFirstVariant(int _randomX, int _randomY)
-    {
-        return _randomX == 0 && _randomY == textureRowCount - 1;
-    }
-
-    private bool CheckLastVariant(int _randomX, int _randomY)
-    {
-        return _randomX == textureColumnCount - 1 && _randomY == 0;
+        return randomIndex;
     }
 
     private Vector3[] CreateNormals(Vector3[] vertices)
