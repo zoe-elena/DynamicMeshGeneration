@@ -33,7 +33,7 @@ public class WallMeshGeneratorEditor : Editor
                 script.WidthRight = 1f;
                 script.WidthLeft = -1f;
                 script.RowCount = 1;
-                script.ColumnCount = 1;
+                script.ColumnCount = 0;
                 script.TextureOffset = Vector3.zero;
                 script.TextureScale = 1f;
                 // Deletes Mesh
@@ -69,8 +69,6 @@ public class WallMeshGeneratorEditor : Editor
         // Create Free Movement Handles that look like squares on the center of each face of the mesh
         var rotation = transform.rotation;
         Handles.matrix = Matrix4x4.TRS(position, rotation, Vector3.one);
-        float topHandle = Handles
-            .FreeMoveHandle(topPos, Quaternion.identity, handleSize, Vector3.zero, Handles.DotHandleCap).y;
         float rightHandle = Handles
             .FreeMoveHandle(rightPos, Quaternion.identity, handleSize, Vector3.zero, Handles.DotHandleCap).z;
         float leftHandle = Handles
@@ -80,7 +78,6 @@ public class WallMeshGeneratorEditor : Editor
         float height = (topPos - bottomPos).magnitude;
         float depth = (frontPos - backPos).magnitude;
         var boundsSize = new Vector3(depth, height, width);
-        // TODO: Description
         Vector3 localCenter = new(0, yScale, zScaleRight + zScaleLeft);
         Vector3 rotatedWoldCenter = position + rotation * localCenter * 0.5f;
 
@@ -93,9 +90,8 @@ public class WallMeshGeneratorEditor : Editor
             Undo.RecordObject(target, "Scaled Scale at Point");
 
             // If the Handles weren't scaled below or higher than 0, the adjusted mesh gets created
-            if (topHandle > 0 && rightHandle > 0 && leftHandle < 0)
+            if (rightHandle > 0 && leftHandle < 0)
             {
-                script.Height = topHandle > script.WallSegmentHeight ? script.WallSegmentHeight * 2 : topHandle * 2f;
                 script.WidthRight = rightHandle * 2f;
                 script.WidthLeft = leftHandle * 2f;
 
