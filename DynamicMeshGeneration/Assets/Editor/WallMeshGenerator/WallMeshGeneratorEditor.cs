@@ -30,9 +30,6 @@ public class WallMeshGeneratorEditor : Editor
             if (script.MeshFilter != null && script.MeshFilter.sharedMesh != null)
             {
                 // Resetting all values if Mesh gets deleted
-                var transform = script.transform;
-                transform.position = Vector3.zero;
-                transform.rotation = Quaternion.identity;
                 script.Depth = 1f;
                 script.Height = script.WallSegmentHeight * 2;
                 script.WidthRight = 1f;
