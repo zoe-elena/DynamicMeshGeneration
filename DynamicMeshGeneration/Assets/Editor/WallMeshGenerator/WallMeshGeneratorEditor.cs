@@ -16,6 +16,11 @@ public class WallMeshGeneratorEditor : Editor
         buttonPressed = GUILayout.Toggle(buttonPressed, "Edit Mesh", "Button");
         if (GUILayout.Button(script.MeshFilter.sharedMesh == null ? "Generate New Mesh" : "Update Mesh"))
         {
+            if (script.MeshFilter.sharedMesh != null)
+            {
+                script.UpdateRandomTextureVariants();
+            }
+
             script.GenerateMesh();
         }
 
@@ -33,11 +38,12 @@ public class WallMeshGeneratorEditor : Editor
                 script.WidthRight = 1f;
                 script.WidthLeft = -1f;
                 script.RowCount = 1;
-                script.ColumnCount = 0;
+                script.columnCount = 0;
                 script.TextureOffset = Vector3.zero;
                 script.TextureScale = 1f;
                 // Deletes Mesh
                 script.MeshFilter.mesh = null;
+                script.ResetTextureVariants();
             }
         }
 

@@ -29,7 +29,7 @@ public class WallMeshGenerator : MonoBehaviour
 
     [HideInInspector] public int RowCount = 1;
 
-    [HideInInspector] public int ColumnCount = 1;
+    [HideInInspector] public int columnCount = 2;
 
     // One segment is this long on texture scale 1 (0.84375f)
     [HideInInspector] public float WallSegmentHeight = 1f;
@@ -46,6 +46,8 @@ public class WallMeshGenerator : MonoBehaviour
     private List<int> textureVariantsRight;
 
     private List<int> textureVariantsLeft;
+
+    private int textureVariantSide;
 
     const int verticesPerQuad = 4;
 
@@ -77,6 +79,24 @@ public class WallMeshGenerator : MonoBehaviour
         Vector2[] uv = CreateUV(vertices);
         Vector3[] normals = CreateNormals(vertices);
         UpdateMesh(vertices, triangles, uv, normals);
+    }
+
+    public void UpdateRandomTextureVariants()
+    {
+        if(textureVariantsRight == null || textureVariantsLeft == null)
+            return;
+
+        for (int i = 0; i < textureVariantsRight.Count; i++)
+        {
+            textureVariantsRight[i] = FindRandomTextureVariant();
+        }
+
+        for (int i = 0; i < textureVariantsLeft.Count; i++)
+        {
+            textureVariantsLeft[i] = FindRandomTextureVariant();
+        }
+        
+        textureVariantSide = FindRandomTextureVariant();
     }
 
     private void Setup()
@@ -152,54 +172,15 @@ public class WallMeshGenerator : MonoBehaviour
         int leftSegments = Mathf.Abs(WidthLeft) / 2 >= 1 ? (int)Mathf.Abs(WidthLeft) / 2 : 0;
         int rightAdditiveSegment = additiveRightExtension > 0 ? 1 : 0;
         int leftAdditiveSegment = additiveLeftExtension > 0 ? 1 : 0;
-        int prevColumnCount = ColumnCount;
-        ColumnCount = rightAdditiveSegment + rightSegments + leftSegments + leftAdditiveSegment;
-
-        if (prevColumnCount != ColumnCount)
-        {
-            if (prevColumnCount < ColumnCount)
-            {
-                if (prevColumnCount == 0)
-                {
-                    textureVariantsRight = new();
-                    textureVariantsLeft = new();
-                    textureVariantsRight.Add(FindRandomTextureVariant());
-                    textureVariantsLeft.Add(FindRandomTextureVariant());
-                }
-                else
-                {
-                    for (int i = 0; i < ColumnCount - prevColumnCount; i++)
-                    {
-                        if (rightSegments + rightAdditiveSegment > textureVariantsRight.Count)
-                        {
-                            textureVariantsRight.Insert(0, FindRandomTextureVariant());
-                        }
-                        else if (leftSegments + leftAdditiveSegment > textureVariantsLeft.Count)
-                        {
-                            textureVariantsLeft.Add(FindRandomTextureVariant());
-                        }
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < prevColumnCount - ColumnCount; i++)
-                {
-                    if (rightSegments + rightAdditiveSegment < textureVariantsRight.Count)
-                    {
-                        textureVariantsRight.RemoveAt(0);
-                    }
-                    else if (leftSegments + leftAdditiveSegment < textureVariantsLeft.Count)
-                    {
-                        textureVariantsLeft.RemoveAt(textureVariantsLeft.Count - 1);
-                    }
-                }
-            }
-        }
-
+        int prevColumnCount = columnCount;
+        columnCount = rightAdditiveSegment + rightSegments + leftSegments + leftAdditiveSegment;
         float height = (_vertices[5] - _vertices[0]).magnitude;
         float quadHeight = height / RowCount;
         float prevUVLength;
+
+        CalculateNewTextureVariants(prevColumnCount, rightSegments, rightAdditiveSegment, leftSegments,
+            leftAdditiveSegment);
+
 
         if (additiveRightExtension > 0)
         {
@@ -242,8 +223,7 @@ public class WallMeshGenerator : MonoBehaviour
         int leftSegments = WidthRight / 2 >= 1 ? (int)WidthRight / 2 : 0;
         int rightAdditiveSegment = additiveRightExtension > 0 ? 1 : 0;
         int leftAdditiveSegment = additiveLeftExtension > 0 ? 1 : 0;
-        ColumnCount = rightAdditiveSegment + rightSegments + leftSegments + leftAdditiveSegment;
-
+        columnCount = rightAdditiveSegment + rightSegments + leftSegments + leftAdditiveSegment;
         float height = (_vertices[5] - _vertices[0]).magnitude;
         float quadHeight = height / RowCount;
         float prevUVLength;
@@ -278,6 +258,56 @@ public class WallMeshGenerator : MonoBehaviour
         }
     }
 
+    public void ResetTextureVariants()
+    {
+        textureVariantsRight = null;
+        textureVariantsLeft = null;
+    }
+
+    private void CalculateNewTextureVariants(int _prevColumnCount, int _rightSegments, int _rightAdditiveSegment,
+        int _leftSegments, int _leftAdditiveSegment)
+    {
+        if (textureVariantsRight == null || textureVariantsLeft == null)
+        {
+            textureVariantsRight = new();
+            textureVariantsLeft = new();
+            textureVariantsRight.Add(FindRandomTextureVariant());
+            textureVariantsLeft.Add(FindRandomTextureVariant());
+            textureVariantSide = FindRandomTextureVariant();
+        }
+        else if (_prevColumnCount != columnCount)
+        {
+            if (_prevColumnCount < columnCount)
+            {
+                for (int i = 0; i < columnCount - _prevColumnCount; i++)
+                {
+                    if (_rightSegments + _rightAdditiveSegment > textureVariantsRight.Count)
+                    {
+                        textureVariantsRight.Insert(0, FindRandomTextureVariant());
+                    }
+                    else if (_leftSegments + _leftAdditiveSegment > textureVariantsLeft.Count)
+                    {
+                        textureVariantsLeft.Add(FindRandomTextureVariant());
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < _prevColumnCount - columnCount; i++)
+                {
+                    if (_rightSegments + _rightAdditiveSegment < textureVariantsRight.Count)
+                    {
+                        textureVariantsRight.RemoveAt(0);
+                    }
+                    else if (_leftSegments + _leftAdditiveSegment < textureVariantsLeft.Count)
+                    {
+                        textureVariantsLeft.RemoveAt(textureVariantsLeft.Count - 1);
+                    }
+                }
+            }
+        }
+    }
+
     private void RotateVertices(Vector3[] vertices)
     {
         Vector3 rotationPoint = MeshFilter.sharedMesh.bounds.center;
@@ -309,7 +339,7 @@ public class WallMeshGenerator : MonoBehaviour
         const int missingQuadWallSides = 3;
         // the front and back face of the cube contain more triangles because of the subdivision for vertex paint
         const int subdividedWallSides = 2;
-        for (int i = 0; i < RowCount * ColumnCount * subdividedWallSides + missingQuadWallSides; i++)
+        for (int i = 0; i < RowCount * columnCount * subdividedWallSides + missingQuadWallSides; i++)
         {
             for (int j = 0; j < firstQuad.Length; j++)
             {
@@ -353,11 +383,11 @@ public class WallMeshGenerator : MonoBehaviour
         List<Vector2> uv = new List<Vector2>(outerCubeUV);
 
         // front face
-        for (int k = 0; k < ColumnCount; k++)
+        for (int k = 0; k < columnCount; k++)
         {
             float distToNextVert;
 
-            if (k < ColumnCount / 2)
+            if (k < columnCount / 2)
             {
                 distToNextVert = (vertices[outerCubeUV.Length + k * 4 + 1] - vertices[outerCubeUV.Length + k * 4])
                     .magnitude;
@@ -378,14 +408,14 @@ public class WallMeshGenerator : MonoBehaviour
         }
 
         // back face
-        for (int k = 0; k < ColumnCount; k++)
+        for (int k = 0; k < columnCount; k++)
         {
             float distToNextVert;
 
-            if (k < ColumnCount / 2)
+            if (k < columnCount / 2)
             {
-                distToNextVert = (vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4 + 1] -
-                                  vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4]).magnitude;
+                distToNextVert = (vertices[outerCubeUV.Length + columnCount * 4 + k * 4 + 1] -
+                                  vertices[outerCubeUV.Length + columnCount * 4 + k * 4]).magnitude;
                 uv.Add(new Vector2(distToNextVert, 0));
                 uv.Add(new Vector2(0, 0));
                 uv.Add(new Vector2(distToNextVert, TextureScale));
@@ -393,8 +423,8 @@ public class WallMeshGenerator : MonoBehaviour
             }
             else
             {
-                distToNextVert = 1 - (vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4 + 1] -
-                                      vertices[outerCubeUV.Length + ColumnCount * 4 + k * 4]).magnitude;
+                distToNextVert = 1 - (vertices[outerCubeUV.Length + columnCount * 4 + k * 4 + 1] -
+                                      vertices[outerCubeUV.Length + columnCount * 4 + k * 4]).magnitude;
                 uv.Add(new Vector2(1, 0));
                 uv.Add(new Vector2(distToNextVert, 0));
                 uv.Add(new Vector2(1, TextureScale));
@@ -422,18 +452,27 @@ public class WallMeshGenerator : MonoBehaviour
     {
         const int verticesTopAndBot = verticesPerQuad * 2;
 
-        // Set Last Texture Variant = Blank / Black
+        // Set top and bottom face Last Texture Variant = Blank / Black
         for (int i = 0; i < verticesTopAndBot; i++)
         {
             _uv[i].x += (1f / (float)textureColumnCount) * (textureColumnCount - 1);
             _uv[i].y += (1f / (float)textureRowCount) * (textureRowCount - 1);
         }
+        
+        // Set right and left face Random Texture Variant
+        for (int i = verticesTopAndBot; i < verticesTopAndBot * 2; i++)
+        {
+            int row = textureVariantSide % 4;
+            int column = textureVariantSide / 4;
+            
+            _uv[i].x += (1f / (float)textureColumnCount) * row;
+            _uv[i].y += (1f / (float)textureRowCount) * column;
+        }
 
-        //TODO: backside
-        for (int i = verticesTopAndBot * 2;
-             i < _uv.Length - textureVariantsRight.Count * verticesPerQuad -
-             textureVariantsLeft.Count * verticesPerQuad;
-             i += verticesPerQuad)
+        int frontVerticesCount =
+            textureVariantsRight.Count * verticesPerQuad + textureVariantsLeft.Count * verticesPerQuad;
+
+        for (int i = verticesTopAndBot * 2; i < _uv.Length - frontVerticesCount; i += verticesPerQuad)
         {
             int randomVariantIndex;
 
@@ -445,6 +484,29 @@ public class WallMeshGenerator : MonoBehaviour
             else
             {
                 randomVariantIndex = textureVariantsLeft[currentSegmentIndex - textureVariantsRight.Count];
+            }
+
+            for (int j = 0; j < verticesPerQuad; j++)
+            {
+                int row = randomVariantIndex % 4;
+                int column = randomVariantIndex / 4;
+                _uv[i + j].x += (1f / (float)textureColumnCount) * row;
+                _uv[i + j].y += (1f / (float)textureRowCount) * column;
+            }
+        }
+
+        for (int i = verticesTopAndBot * 2 + frontVerticesCount; i < _uv.Length; i += verticesPerQuad)
+        {
+            int randomVariantIndex;
+
+            int currentSegmentIndex = (i - (verticesTopAndBot * 2 + frontVerticesCount)) / verticesPerQuad;
+            if (currentSegmentIndex < textureVariantsLeft.Count)
+            {
+                randomVariantIndex = textureVariantsLeft[^(currentSegmentIndex + 1)];
+            }
+            else
+            {
+                randomVariantIndex = textureVariantsRight[^(currentSegmentIndex - textureVariantsLeft.Count + 1)];
             }
 
             for (int j = 0; j < verticesPerQuad; j++)
@@ -478,7 +540,7 @@ public class WallMeshGenerator : MonoBehaviour
         var normalsBack = new List<Vector3>();
         for (int i = 0; i < RowCount; i++)
         {
-            for (int j = 0; j < ColumnCount; j++)
+            for (int j = 0; j < columnCount; j++)
             {
                 normals.Add(frontNormal);
                 normalsBack.Add(backNormal);
