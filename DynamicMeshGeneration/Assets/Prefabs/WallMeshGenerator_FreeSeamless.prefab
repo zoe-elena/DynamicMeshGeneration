@@ -61,7 +61,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 949b02e7b9aa77b4b9dbe5ef40db4823, type: 2}
+  - {fileID: 2100000, guid: 75b168ad0885f8b4d98fb9ccc6abaf3e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -92,9 +92,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6462230474462195206}
-  - component: {fileID: 6462230474462195205}
+  - component: {fileID: 3423370020220534379}
   m_Layer: 0
-  m_Name: WallMeshGenerator
+  m_Name: WallMeshGenerator_FreeSeamless
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -116,7 +116,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6462230474462195205
+--- !u!114 &3423370020220534379
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -125,19 +125,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 6462230474462195207}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 907679845a08ae342a10433310cab249, type: 3}
+  m_Script: {fileID: 11500000, guid: b02e7a602050f3d44b27098256e0ef9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   MeshFilter: {fileID: 6462230473415345830}
   MeshTransform: {fileID: 6462230473415345829}
-  Height: 2
+  Height: 1.6875
   Depth: 1
   WidthRight: 1
   WidthLeft: -1
+  subDivideFrontAndBack: 1
+  subdivisionMultiplier: 1
   TextureOffset: {x: 0, y: 0}
   TextureScale: 1
-  RowCount: 1
-  ColumnCount: 1
-  TextureRowCount: 4
-  TextureColumnCount: 3
-  WallSegmentHeight: 1
+  rowCount: 5
+  columnCount: 1
+  WallSegmentHeight: 0.84375

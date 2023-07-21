@@ -1,8 +1,8 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(WallMeshGenerator))]
-public class WallMeshGeneratorEditor : Editor
+[CustomEditor(typeof(WallMeshGeneratorVariant))]
+public class WallMeshGeneratorVariantEditor : Editor
 {
     private bool buttonPressed;
     private const float handleSize = 0.05f;
@@ -10,12 +10,17 @@ public class WallMeshGeneratorEditor : Editor
     public override void OnInspectorGUI()
     {
         DrawDefaultInspector();
-        WallMeshGenerator script = (WallMeshGenerator)target;
+        WallMeshGeneratorVariant script = (WallMeshGeneratorVariant)target;
         GUILayout.Space(20f);
 
         buttonPressed = GUILayout.Toggle(buttonPressed, "Edit Mesh", "Button");
         if (GUILayout.Button(script.MeshFilter.sharedMesh == null ? "Generate New Mesh" : "Update Mesh"))
         {
+            if (script.MeshFilter.sharedMesh != null)
+            {
+                script.UpdateRandomTextureVariants();
+            }
+
             script.GenerateMesh();
         }
 
@@ -26,15 +31,16 @@ public class WallMeshGeneratorEditor : Editor
             {
                 // Resetting all values if Mesh gets deleted
                 script.Depth = 1f;
-                script.Height = 2f;
+                script.Height = script.wallHeight * 2;
                 script.WidthRight = 1f;
                 script.WidthLeft = -1f;
-                script.rowCount = 5;
-                script.columnCount = 5;
+                script.RowCount = 1;
+                script.columnCount = 0;
                 script.TextureOffset = Vector3.zero;
                 script.TextureScale = 1f;
                 // Deletes Mesh
                 script.MeshFilter.mesh = null;
+                script.ResetTextureVariants();
             }
         }
 
@@ -43,7 +49,7 @@ public class WallMeshGeneratorEditor : Editor
 
     private void OnSceneGUI()
     {
-        WallMeshGenerator script = (WallMeshGenerator)target;
+        WallMeshGeneratorVariant script = (WallMeshGeneratorVariant)target;
         // Nothing gets created or drawn if there is no Mesh, or the Edit Mesh Button isn't pressed
         if (!script.MeshFilter.sharedMesh || !buttonPressed)
             return;
@@ -66,8 +72,6 @@ public class WallMeshGeneratorEditor : Editor
         // Create Free Movement Handles that look like squares on the center of each face of the mesh
         var rotation = transform.rotation;
         Handles.matrix = Matrix4x4.TRS(position, rotation, Vector3.one);
-        float topHandle = Handles
-            .FreeMoveHandle(topPos, Quaternion.identity, handleSize, Vector3.zero, Handles.DotHandleCap).y;
         float rightHandle = Handles
             .FreeMoveHandle(rightPos, Quaternion.identity, handleSize, Vector3.zero, Handles.DotHandleCap).z;
         float leftHandle = Handles
@@ -89,9 +93,8 @@ public class WallMeshGeneratorEditor : Editor
             Undo.RecordObject(target, "Scaled Scale at Point");
 
             // If the Handles weren't scaled below or higher than 0, the adjusted mesh gets created
-            if (topHandle > 0 && rightHandle > 0 && leftHandle < 0)
+            if (rightHandle > 0 && leftHandle < 0)
             {
-                script.Height = topHandle * 2f;
                 script.WidthRight = rightHandle * 2f;
                 script.WidthLeft = leftHandle * 2f;
 
