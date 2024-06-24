@@ -2,4 +2,4 @@
 A project for the university modul Tools and Backend Development.
 
 A tool to create threedimentional wall meshes with a bunch of customisable settings.
-![DynamicWall](https://github.com/zoe-elena/DynamicMeshGeneration/assets/38657057/aa0c8acf-dd5c-495e-8a8e-3d22ec75461d)
+![image](https://github.com/zoe-elena/DynamicMeshGeneration/assets/38657057/465d5473-3a5f-4210-b254-c4d8e89698c2)
